@@ -1,5 +1,6 @@
 package com.subject.user.repository;
 
+import com.subject.todo.code.Priority;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import com.subject.db.MemoryEntity;

@@ -11,5 +11,5 @@ public class SearchTodoDto {
     private long id;
     private String name;
     private LocalDate practiceDate;
-    private int sort; // 오름차순 또는 내림차순 정렬 선택
+    private boolean isAsc; // 오름차순 또는 내림차순 정렬 선택 -> enum
 }

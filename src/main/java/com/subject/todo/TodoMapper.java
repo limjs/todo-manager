@@ -1,5 +1,6 @@
 package com.subject.todo;
 
+import com.subject.todo.controller.TodoResponse;
 import com.subject.todo.service.TodoDto;
 import org.springframework.stereotype.Component;
 import com.subject.todo.controller.SearchTodoResponse;
@@ -10,6 +11,8 @@ import java.util.stream.Collectors;
 
 @Component
 public class TodoMapper {
+    // https://hstory0208.tistory.com/entry/SpirngJPA-Dto%EC%99%80-Entity%EB%A5%BC-%EB%B6%84%EB%A6%AC%ED%95%B4%EC%84%9C-%EC%82%AC%EC%9A%A9%ED%95%98%EB%8A%94-%EC%9D%B4%EC%9C%A0
+    // mapper를 버릴까?
 
     public List<TodoDto> toDtoList(List<Todo> todos) {
         return todos.stream()
@@ -54,4 +57,13 @@ public class TodoMapper {
         return searchTodoResponse;
     }
 
+    public TodoResponse toResponse (TodoDto todoDto) {
+        TodoResponse todoResponse = new TodoResponse();
+        return todoResponse;
+    }
+
+    public Todo toEntity(TodoDto todoDto) {
+        Todo todo = new Todo();
+        return todo;
+    }
 }

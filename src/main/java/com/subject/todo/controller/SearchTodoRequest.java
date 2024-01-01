@@ -11,14 +11,14 @@ import java.time.LocalDate;
 public class SearchTodoRequest {
     private String name;
     private LocalDate practiceDate;
-    private int sort;
+    private Boolean sort;
 
     public SearchTodoDto toDto() {
         SearchTodoDto searchTodoDto = new SearchTodoDto();
         searchTodoDto.setId(1L);
         searchTodoDto.setName(this.getName());
         searchTodoDto.setPracticeDate(this.getPracticeDate());
-        searchTodoDto.setSort(this.getSort());
+        searchTodoDto.setAsc(this.getSort());
         return searchTodoDto;
     }
 }
