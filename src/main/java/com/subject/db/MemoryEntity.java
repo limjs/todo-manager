@@ -6,5 +6,5 @@ import lombok.RequiredArgsConstructor;
 @Data
 @RequiredArgsConstructor
 public class MemoryEntity {
-    private Long index;
+    private Long id; // auto increment
 }

@@ -1,8 +1,6 @@
-package com.subject.todo.controller;
+package com.subject.todo.controller.model;
 
-
-import com.subject.todo.code.Priority;
-import com.subject.todo.service.TodoDto;
+import com.subject.todo.service.model.TodoDto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -22,12 +20,12 @@ public class TodoRequest {
     private LocalDate practiceDate; // todo를 실행할 날짜
 
     public TodoDto toDto () {
-        TodoDto todoDto = new TodoDto();
-        todoDto.setTask(this.task);
-        todoDto.setDescription(this.description);
-        todoDto.setUserId(this.userId);
-        todoDto.setPracticeDate(this.practiceDate);
-        return todoDto;
+        return TodoDto.builder()
+                .task(this.task)
+                .description(this.description)
+                .userId(this.userId)
+                .practiceDate(this.practiceDate)
+                .build();
     }
 
 }

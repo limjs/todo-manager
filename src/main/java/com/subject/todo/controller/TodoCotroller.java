@@ -1,13 +1,16 @@
 package com.subject.todo.controller;
 
+import com.subject.todo.controller.model.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import com.subject.todo.TodoMapper;
-import com.subject.todo.service.TodoDto;
+import com.subject.todo.service.model.TodoMapper;
+import com.subject.todo.service.model.TodoDto;
 import com.subject.todo.service.TodoService;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 public class TodoCotroller {
     private final TodoService todoService;
@@ -24,20 +27,20 @@ public class TodoCotroller {
             @RequestBody SearchTodoRequest searchTodoRequest
     ) {
         List<TodoDto> todos = todoService.searchTodos(searchTodoRequest.toDto());
-        return todoMapper.toResponseList(todos);
+        return todoMapper.toSearchResponseList(todos);
     }
 
     @PostMapping("/todo")
     public TodoResponse create(
-            @RequestBody TodoRequest todorequest
+            @RequestBody TodoRequest request
     ) {
         TodoDto todoDto = null;
         try {
-            todoDto = todoService.create(todorequest.toDto());
+            todoDto = todoService.create(request.toDto());
         } catch (Exception e) {
-
+            log.info("error: {}", e.getMessage());
         }
-        return todoMapper.toResponse(todoDto);
+        return todoDto.toResponse();
     }
 
     @PatchMapping("/todo/{todoId}/delegation/{userId}")
@@ -49,11 +52,82 @@ public class TodoCotroller {
         try {
             dto = todoService.delegate(todoId, userId);
         } catch (Exception e) {
-
+            log.info("error: {}", e.getMessage());
         }
-        return todoMapper.toResponse(dto);
+        return dto.toResponse();
     }
 
-    // 특정 todo 의 task, description, 우선순위, 상태를 변경할 수 있다.
+    @PatchMapping("/todo/{todoId}/rejection")
+    public void restore(
+            @PathVariable("todoId") Long todoId
+    ) {
+        try {
+            todoService.restore(todoId);
+        } catch (Exception e) {
+            log.info("error: {}", e.getMessage());
+        }
+    }
 
+    @PostMapping("/todo/{todoId}/priority")
+    public TodoResponse changePriority(
+            @PathVariable("todoId") Long todoId,
+            @RequestBody PriorityTodoRequest todorequest
+    ) {
+        TodoDto todoDto = null;
+        try {
+            todoDto = todoService.changePriority(todorequest.toDto(), todoId);
+        } catch (Exception e) {
+            log.info("error: {}", e.getMessage());
+        }
+        return todoDto.toResponse();
+    }
+
+    @PatchMapping("/todo/{todoId}/status")
+    public TodoResponse goNextStatus(
+            @PathVariable("todoId") Long todoId
+    ) {
+        TodoDto dto = null;
+        try {
+            dto = todoService.goNextStatus(todoId);
+        } catch (Exception e) {
+            log.info("error: {}", e.getMessage());
+        }
+        return dto.toResponse();
+    }
+
+    @PatchMapping("/todo/{todoId}/cancel")
+    public TodoResponse cancel(
+            @PathVariable("todoId") Long todoId
+    ) {
+        TodoDto dto = null;
+        try {
+            dto = todoService.cancel(todoId);
+        } catch (Exception e) {
+
+        }
+        return dto.toResponse();
+    }
+
+    @DeleteMapping("/todo/{todoId}")
+    public void delete(
+            @PathVariable("todoId") Long todoId
+    ) {
+        try {
+            todoService.delete(todoId);
+        } catch (Exception e) {
+
+        }
+    }
+
+
+    @GetMapping("/todos/all")
+    public List<TodoResponse> searchTest() {
+        List<TodoDto> todos = todoService.searchAllTodos();
+        return todoMapper.toResponseList(todos);
+    }
+    @PostMapping("/test/dummy")
+    public void createDummyData() {
+        // 테스트 데이터 생성
+        todoService.createDummyData();
+    }
 }

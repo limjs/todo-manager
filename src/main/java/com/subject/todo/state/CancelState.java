@@ -1,4 +1,4 @@
-package com.subject.state;
+package com.subject.todo.state;
 
 import com.subject.todo.code.TodoStatus;
 

@@ -10,11 +10,11 @@ import java.util.List;
 public class UserRepository extends MemoryRepositoryImpl<User> {
     @PostConstruct
     public void init() {
-        save(new User(1L, "김철수"));
-        save(new User(2L, "이훈이"));
-        save(new User(3L, "한유리"));
-        save(new User(4L, "박영희"));
-        save(new User(5L, "홍길동"));
+        save(new User("김철수"));
+        save(new User("이훈이"));
+        save(new User("한유리"));
+        save(new User("박영희"));
+        save(new User("홍길동"));
     }
 
     public List<User> findByUserName(String name) {

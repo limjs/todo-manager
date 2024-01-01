@@ -1,11 +1,12 @@
-package com.subject.state;
+package com.subject.todo.state;
 
 import com.subject.todo.code.TodoStatus;
 
-public class InProgressStatus implements TodoState {
+public class WaitingStatus implements TodoState {
+
     @Override
     public TodoStatus next() {
-        return TodoStatus.DONE;
+        return TodoStatus.IN_PROGRESS;
     }
 
     @Override
