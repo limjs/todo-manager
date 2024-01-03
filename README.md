@@ -1,6 +1,10 @@
 ### 사용 메뉴얼
-> 메인 페이지 : localhost:8080/swagger-ui/index.html 으로 접속
+> JAVA 17, Spring Boot 3.2.1
+>  
+> 빌드 후 localhost:8080/swagger-ui/index.html 으로 접속
+> 
 > view는 스웨거를 사용하였으며 각각의 API를 테스트 할 수 있습니다.
+> 
 > 각각의 API를 테스트 할 때는, 테스트 하고자 하는 API를 클릭하고, 우측 상단의 `Try it out` 버튼을 클릭하면 됩니다.
 
 
