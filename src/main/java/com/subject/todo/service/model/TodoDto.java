@@ -2,7 +2,6 @@ package com.subject.todo.service.model;
 
 import com.subject.todo.controller.model.SearchTodoResponse;
 import com.subject.todo.controller.model.TodoResponse;
-import com.subject.todo.state.TodoState;
 import com.subject.todo.repository.Todo;
 import lombok.Builder;
 import lombok.Getter;
@@ -34,11 +33,9 @@ public class TodoDto {
 
     public boolean isChangeablePriority (int prevPriorityValue, Priority prevPriority) {
         if (this.priority == prevPriority) { // 같은 등급 내에서 변경 시 누락 발생
-            log.info("같은 우선순위");
             return false;
         }
-        if (this.priorityValue != prevPriorityValue + 1){
-            log.info("우선순위 값이 1씩 차이나야 합니다.");
+        if (this.priorityValue != prevPriorityValue + 1){ // 다른 등급으로 변경시 다음 우선순위로 등록 가능
             return false;
         }
         return true;

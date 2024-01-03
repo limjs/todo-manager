@@ -3,13 +3,13 @@ package com.subject.todo.controller.model;
 import com.subject.todo.service.model.TodoDto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.Setter;
 
 import java.time.LocalDate;
 
 @Getter
-@Setter
+@AllArgsConstructor
 public class TodoRequest {
     @NotBlank
     private String task; // 업무 제목

@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Slf4j
@@ -35,12 +36,11 @@ public class MemoryRepositoryImpl<T extends MemoryEntity> implements MemoryRepos
 
     @Override
     public long deleteById(Long id) {
-        Optional<T> optionalT = memoryDB.stream()
-                .filter(i -> i.getId().equals(id)).findFirst();
-
-        if (optionalT.isPresent()) {
-            memoryDB.remove(optionalT.get());
-            return 1;
+        for (int i = 0; i < memoryDB.size(); i++) {
+            if (Objects.equals(memoryDB.get(i).getId(), id)) {
+                memoryDB.remove(i);
+                return 1;
+            }
         }
         return 0;
     }

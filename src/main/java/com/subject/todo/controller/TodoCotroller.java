@@ -1,6 +1,7 @@
 package com.subject.todo.controller;
 
 import com.subject.todo.controller.model.*;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -24,6 +25,7 @@ public class TodoCotroller {
 
     @PostMapping("/todos")
     public List<SearchTodoResponse> search(
+            @Valid
             @RequestBody SearchTodoRequest searchTodoRequest
     ) {
         List<TodoDto> todos = todoService.searchTodos(searchTodoRequest.toDto());
@@ -32,14 +34,10 @@ public class TodoCotroller {
 
     @PostMapping("/todo")
     public TodoResponse create(
+            @Valid
             @RequestBody TodoRequest request
     ) {
-        TodoDto todoDto = null;
-        try {
-            todoDto = todoService.create(request.toDto());
-        } catch (Exception e) {
-            log.info("error: {}", e.getMessage());
-        }
+        TodoDto todoDto = todoService.create(request.toDto());
         return todoDto.toResponse();
     }
 
@@ -48,12 +46,7 @@ public class TodoCotroller {
             @PathVariable("todoId") Long todoId,
             @PathVariable("userId") Long userId
     ) {
-        TodoDto dto = null;
-        try {
-            dto = todoService.delegate(todoId, userId);
-        } catch (Exception e) {
-            log.info("error: {}", e.getMessage());
-        }
+        TodoDto dto = todoService.delegate(todoId, userId);
         return dto.toResponse();
     }
 
@@ -61,24 +54,18 @@ public class TodoCotroller {
     public void restore(
             @PathVariable("todoId") Long todoId
     ) {
-        try {
-            todoService.restore(todoId);
-        } catch (Exception e) {
-            log.info("error: {}", e.getMessage());
-        }
+        todoService.restore(todoId);
     }
 
     @PostMapping("/todo/{todoId}/priority")
     public TodoResponse changePriority(
             @PathVariable("todoId") Long todoId,
-            @RequestBody PriorityTodoRequest todorequest
+            @Valid
+            @RequestBody PriorityTodoRequest request
     ) {
-        TodoDto todoDto = null;
-        try {
-            todoDto = todoService.changePriority(todorequest.toDto(), todoId);
-        } catch (Exception e) {
-            log.info("error: {}", e.getMessage());
-        }
+        TodoDto requestDto = request.toDto();
+        requestDto.setId(todoId);
+        TodoDto todoDto = todoService.changePriority(requestDto);
         return todoDto.toResponse();
     }
 
@@ -86,12 +73,7 @@ public class TodoCotroller {
     public TodoResponse goNextStatus(
             @PathVariable("todoId") Long todoId
     ) {
-        TodoDto dto = null;
-        try {
-            dto = todoService.goNextStatus(todoId);
-        } catch (Exception e) {
-            log.info("error: {}", e.getMessage());
-        }
+        TodoDto dto = todoService.goNextStatus(todoId);
         return dto.toResponse();
     }
 
@@ -99,12 +81,7 @@ public class TodoCotroller {
     public TodoResponse cancel(
             @PathVariable("todoId") Long todoId
     ) {
-        TodoDto dto = null;
-        try {
-            dto = todoService.cancel(todoId);
-        } catch (Exception e) {
-
-        }
+        TodoDto dto = todoService.cancel(todoId);
         return dto.toResponse();
     }
 
@@ -112,22 +89,12 @@ public class TodoCotroller {
     public void delete(
             @PathVariable("todoId") Long todoId
     ) {
-        try {
-            todoService.delete(todoId);
-        } catch (Exception e) {
-
-        }
+        todoService.delete(todoId);
     }
-
 
     @GetMapping("/todos/all")
     public List<TodoResponse> searchTest() {
         List<TodoDto> todos = todoService.searchAllTodos();
         return todoMapper.toResponseList(todos);
-    }
-    @PostMapping("/test/dummy")
-    public void createDummyData() {
-        // 테스트 데이터 생성
-        todoService.createDummyData();
     }
 }

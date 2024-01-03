@@ -11,8 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.subject.todo.service.model.TodoMapper;
 import com.subject.todo.repository.Todo;
-
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,21 +28,24 @@ public class TodoService {
         this.todoMapper = todoMapper;
     }
 
+    //@Transactional(readOnly = true)
     public List<TodoDto> searchAllTodos() {
         List<Todo> todos = todoRepository.findAll();
         return todoMapper.toDtoList(todos);
     }
 
     // 특정 담당자, 특정 일자의 list 를 중요도/우선순위로 정렬하여 조회할 수 있다.
+    // @Transactional(readOnly = true)
     public List<TodoDto> searchTodos(SearchTodoDto searchTodoDto) {
         List<Todo> todos = todoRepository.searchTodos(searchTodoDto);
         return todoMapper.toDtoList(todos);
     }
 
     // 생성
-    public TodoDto create(TodoDto todoDto) throws Exception {
+    //@Transactional
+    public TodoDto create(TodoDto todoDto)  {
         // medium 등급의 가장 마지막 우선순위
-        Optional<Todo> optionalTodo = todoRepository.findTopByUserIdAndPriority(todoDto.getUserId(), SortBy.ASC.isAsc(), Priority.MEDIUM);
+        Optional<Todo> optionalTodo = todoRepository.findTopByUserIdAndPriority(todoDto.getUserId(), SortBy.ASC.isAsc(), Priority.MEDIUM, todoDto.getPracticeDate());
         Todo todo = null;
         if (optionalTodo.isPresent()) {
             Todo mediumTodo = optionalTodo.get();
@@ -57,10 +58,11 @@ public class TodoService {
 
     // 위임
     // 위임한 담당자에게 todo는 위임 + 위임받은 사람이 표시된다.
-    public TodoDto delegate(long todoId, long delegatedUserId) throws Exception {
+    //@Transactional
+    public TodoDto delegate(long todoId, long delegatedUserId) {
         Todo prevTodo = getTodoDtoById(todoId);
         if (prevTodo.getIsDelegated()) {
-            throw new Exception("이미 위임된 태스크입니다.");
+            throw new RuntimeException("이미 위임된 태스크입니다.");
         }
 
         // 위임 할 태스크
@@ -77,7 +79,7 @@ public class TodoService {
     }
 
     // 위임받은 태스크
-    private void setDelegatedTask(TodoDto todoDto) throws Exception {
+    private void setDelegatedTask(TodoDto todoDto) {
         todoDto.setPrevUserId(todoDto.getUserId());
         todoDto.setUserId(todoDto.getDelegatedUserId());
         todoDto.setStatus(TodoStatus.WAITING);
@@ -86,14 +88,14 @@ public class TodoService {
         todoDto.setDelegated(Boolean.FALSE);
         todoDto.setDelegatedUserId(0L);
 
-        Optional<Todo> optionalHighTodo = todoRepository.findTopByUserIdAndPriority(todoDto.getUserId(), SortBy.ASC.isAsc(), Priority.HIGH);
+        Optional<Todo> optionalHighTodo = todoRepository.findTopByUserIdAndPriority(todoDto.getUserId(), SortBy.ASC.isAsc(), Priority.HIGH, todoDto.getPracticeDate());
         if (optionalHighTodo.isEmpty()) { // high 0 초기화
             todoDto.setPriority(Priority.HIGH);
             todoDto.setPriorityValue(DEFAULT_PRIORITY_VALUE);
         } else { // 가장 낮은 우선순위 가져오기
-            Optional<Todo> optionalLowestTodo = todoRepository.findTopByUserId(todoDto.getUserId(), SortBy.DESC.isAsc());
+            Optional<Todo> optionalLowestTodo = todoRepository.findTopByUserId(todoDto.getUserId(), SortBy.DESC.isAsc(), todoDto.getPracticeDate());
             if (optionalLowestTodo.isEmpty()) {
-                throw new Exception("해당 todo가 존재하지 않습니다.");
+                throw new RuntimeException("해당 태스크가 존재하지 않습니다.");
             }
             Todo lowestTodo = optionalLowestTodo.get();
             todoDto.setPriority(lowestTodo.getPriority());
@@ -102,6 +104,7 @@ public class TodoService {
     }
 
     // 위임 거절
+    //@Transactional
     public void restore(long todoId) {
         Todo delegatedTodo = getTodoDtoById(todoId);
         Todo prevTodo = getTodoDtoById(delegatedTodo.getPrevTodoId());
@@ -117,8 +120,68 @@ public class TodoService {
         todoRepository.save(delegatedTodo);
     }
 
+    //@Transactional
+    public TodoDto changePriority(TodoDto todoDto) { // 중복되거나 누락이 있어서는 안된다.
+        Todo todo = getTodoDtoById(todoDto.getId());
+        // 변경하고자 하는 등급을 가진 태스크가 없으면 디폴트 값으로 등록
+        Optional<Todo> optionalTodo = todoRepository.findTopByUserIdAndPriority(todo.getUserId(), SortBy.ASC.isAsc(), todoDto.getPriority(), todo.getPracticeDate());
+        if (optionalTodo.isEmpty()) {
+            if (todoDto.getPriorityValue() != DEFAULT_PRIORITY_VALUE) {
+                throw new RuntimeException("등록할 수 없는 우선순위입니다.");
+            }
+        } else { // 변경하고자 하는 등급을 가진 태스크가 있으면 변경 가능한지 확인
+            Todo prevTodo = optionalTodo.get();
+            if (!todoDto.isChangeablePriority(prevTodo.getPriorityValue(), todo.getPriority())) {
+                throw new RuntimeException("등록할 수 없는 우선순위입니다.");
+            }
+        }
+        // 중간에 끼워넣기 식으로 변경은 불가능하다고 가정했을 때.
+        sortStatus(todoDto);
+        todo.changePriority(todoDto);
+        return todoRepository.save(todo).toDto();
+    }
+
+    // 상태 변경
+    //@Transactional
+    public TodoDto goNextStatus(long id) {
+        Todo todo = getTodoDtoById(id);
+        todo.goNextStatus();
+        // done 일때 정렬 필요
+        return todoRepository.save(todo).toDto();
+    }
+
+    //@Transactional
+    public TodoDto cancel(long id) {
+        Todo todo = getTodoDtoById(id);
+        todo.cancel();
+        sortStatus(todo.toDto());
+        return todoRepository.save(todo).toDto();
+    }
+
+    // 삭제
+    //@Transactional
+    public void delete(long id) {
+        Todo todo = getTodoDtoById(id);
+        todo.delete();
+        sortStatus(todo.toDto());
+        todoRepository.save(todo);
+    }
+
+    // 상태 정렬 메소드
+    private void sortStatus(TodoDto todoDto) {
+        // 변경 전 등급
+        // 해당 상태보다 높은 상태를 가진 태스크들의 우선순위를 1씩 감소시킨다.
+        Todo prevTodo = getTodoDtoById(todoDto.getId());
+        sortPriorityByReducing(prevTodo.toDto());
+
+        // 변경 후 등급
+        // 해당 상태보다 높은 상태를 가진 태스크들의 상태를 1씩 증가시켜야 한다.
+        sortPriorityByIncreasing(todoDto);
+    }
+
+    // 우선순위 변경 시, 해당 우선순위 이상 태스크들의 우선순위를 1씩 증가시켜야 한다.
     private void sortPriorityByIncreasing(TodoDto todoDto) {
-        todoRepository.findGreaterThanEqualPriorityValue(todoDto.getUserId(), todoDto.getPriorityValue(), todoDto.getPriority())
+        todoRepository.findGreaterThanEqualPriorityValue(todoDto.getUserId(), todoDto.getPriorityValue(), todoDto.getPriority(), todoDto.getPracticeDate())
                 .forEach(t -> {
                             t.setPriorityValue(t.getPriorityValue() + NEXT_PRIORITY_VALUE);
                             todoRepository.save(t);
@@ -128,7 +191,7 @@ public class TodoService {
 
     // 우선순위 변경 시, 해당 우선순위보다 높은 우선순위를 가진 태스크들의 우선순위를 1씩 감소시켜야 한다.
     private void sortPriorityByReducing(TodoDto todoDto) {
-        todoRepository.findGreaterThanPriorityValue(todoDto.getUserId(), todoDto.getPriorityValue(), todoDto.getPriority())
+        todoRepository.findGreaterThanPriorityValue(todoDto.getUserId(), todoDto.getPriorityValue(), todoDto.getPriority(), todoDto.getPracticeDate())
                 .forEach(t -> {
                             t.setPriorityValue(t.getPriorityValue() - NEXT_PRIORITY_VALUE);
                             todoRepository.save(t);
@@ -136,58 +199,11 @@ public class TodoService {
                 );
     }
 
-    public TodoDto changePriority(TodoDto todoDto, long todoId) throws Exception {
-        Todo todo = getTodoDtoById(todoId);
-        // 변경 가능한 등급인지 확인. 중복되거나 누락이 있어서는 안된다.
-        Optional<Todo> optionalTodo = todoRepository.findTopByUserIdAndPriority(todoDto.getUserId(), SortBy.ASC.isAsc(), todoDto.getPriority());
-        if (optionalTodo.isEmpty()) { // 변경하고자 하는 등급이 없으면 디폴트로 등록
-            if (todoDto.getPriorityValue() != DEFAULT_PRIORITY_VALUE) {
-                throw new Exception("등록할 수 없는 우선순위입니다.");
-            }
-        } else {
-            Todo prevTodo = optionalTodo.get();
-            if (!todoDto.isChangeablePriority(prevTodo.getPriorityValue(), todo.getPriority())) {
-                throw new Exception("등록할 수 없는 우선순위입니다.");
-            }
-        }
-        todo.changePriority(todoDto);
-        return todoRepository.save(todo).toDto();
-    }
-
-    // 상태 변경
-    public TodoDto goNextStatus(long id) throws Exception {
-        Todo todo = getTodoDtoById(id);
-        todo.goNextStatus();
-        return todoRepository.save(todo).toDto();
-    }
-
-    public TodoDto cancel(long id) throws Exception {
-        Todo todo = getTodoDtoById(id);
-        todo.cancel();
-        return todoRepository.save(todo).toDto();
-    }
-
-    // 삭제
-    public void delete(long id) {
-        Todo todo = getTodoDtoById(id);
-        todo.delete();
-        todoRepository.save(todo);
-    }
-
     private Todo getTodoDtoById(long id) {
         Optional<Todo> optionalTodo = todoRepository.findByIdAndDeleted(id);
         if (optionalTodo.isEmpty()) {
-            // throw new Exception("해당 todo가 존재하지 않습니다.");
+            throw new RuntimeException("해당 태스크가 존재하지 않습니다.");
         }
         return optionalTodo.get();
-    }
-
-    public void createDummyData() {
-        todoRepository.save(new Todo(LocalDate.parse("2024-08-01"), 1L, Priority.HIGH, 1));
-        todoRepository.save(new Todo(LocalDate.parse("2024-08-01"), 1L, Priority.MEDIUM, 1));
-        todoRepository.save(new Todo(LocalDate.parse("2024-08-01"), 1L, Priority.MEDIUM, 0));
-        todoRepository.save(new Todo(LocalDate.parse("2024-08-01"), 1L, Priority.MEDIUM, 2));
-        todoRepository.save(new Todo(LocalDate.parse("2024-08-01"), 2L, Priority.HIGH, 0));
-        todoRepository.save(new Todo(LocalDate.parse("2024-08-01"), 3L, Priority.HIGH, 0));
     }
 }

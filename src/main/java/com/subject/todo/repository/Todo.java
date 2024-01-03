@@ -4,10 +4,7 @@ package com.subject.todo.repository;
 import com.subject.todo.code.Priority;
 import com.subject.todo.code.TodoStatus;
 import com.subject.todo.service.model.TodoDto;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 import com.subject.db.MemoryEntity;
 
 import java.time.LocalDate;
@@ -65,11 +62,11 @@ public class Todo extends MemoryEntity {
         this.isDeleted = true;
     }
 
-    public void goNextStatus() throws Exception {
+    public void goNextStatus() {
         this.status = this.status.getTodoState().next();
     }
 
-    public void cancel() throws Exception {
+    public void cancel() {
         this.status = this.status.getTodoState().cancel();
     }
 
