@@ -135,7 +135,7 @@ public class TodoService {
                 throw new RuntimeException("등록할 수 없는 우선순위입니다.");
             }
         }
-        // 중간에 끼워넣기 식으로 변경은 불가능하다고 가정했을 때.
+        // 중간에 끼워넣기 식으로 변경은 불가능
         sortStatus(todoDto);
         todo.changePriority(todoDto);
         return todoRepository.save(todo).toDto();
@@ -146,16 +146,20 @@ public class TodoService {
     public TodoDto goNextStatus(long id) {
         Todo todo = getTodoDtoById(id);
         todo.goNextStatus();
-        // done 일때 정렬 필요
-        return todoRepository.save(todo).toDto();
+        Todo nextTodo = todoRepository.save(todo);
+        if (TodoStatus.DONE.equals(todo.getStatus())) {
+            sortPriorityByReducing(todo.toDto()); // 같은 등급 내에서만 변경
+        }
+        return nextTodo.toDto();
     }
 
     //@Transactional
     public TodoDto cancel(long id) {
         Todo todo = getTodoDtoById(id);
         todo.cancel();
-        sortStatus(todo.toDto());
-        return todoRepository.save(todo).toDto();
+        Todo cancelledTodo = todoRepository.save(todo);
+        sortPriorityByReducing(todo.toDto()); // 같은 등급 내에서만 변경
+        return cancelledTodo.toDto();
     }
 
     // 삭제
@@ -163,8 +167,8 @@ public class TodoService {
     public void delete(long id) {
         Todo todo = getTodoDtoById(id);
         todo.delete();
-        sortStatus(todo.toDto());
         todoRepository.save(todo);
+        sortPriorityByReducing(todo.toDto()); // 같은 등급 내에서만 변경
     }
 
     // 상태 정렬 메소드
@@ -189,7 +193,7 @@ public class TodoService {
                 );
     }
 
-    // 우선순위 변경 시, 해당 우선순위보다 높은 우선순위를 가진 태스크들의 우선순위를 1씩 감소시켜야 한다.
+    // 우선순위 변경 시, 같은 등급에서 해당 우선순위보다 높은 우선순위를 가진 태스크들의 우선순위를 1씩 감소시켜야 한다.
     private void sortPriorityByReducing(TodoDto todoDto) {
         todoRepository.findGreaterThanPriorityValue(todoDto.getUserId(), todoDto.getPriorityValue(), todoDto.getPriority(), todoDto.getPracticeDate())
                 .forEach(t -> {
